@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/bash     
 ## hm -- A HangMan Game implemented by Bash Script.
 # Time-stamp: <2012-02-03 13:54:27 hqwrong>
 # # Copyright (C) 2011,2012 by 王泓钦(hqwrong) <hq.wrong@gmail.com>
@@ -10,7 +10,7 @@
 #  a plain text file with each line a word.
 #    `hm' will pick randomly a word from this file to play with. You can query
 #  the word definition using external dictionary program -- the default is to
-#  use program 'dict'--you can set yours by editing function 'hm_dict', but try to
+#  use program 'dictd'--you can set yours by editing function 'hm_dict', but try to
 #  make the query answer to be output to stdout using plain text.
 #     Type `hm -h' to get help message.
 #     Enjoy!
@@ -32,12 +32,12 @@
 
 
 declare -r MAX_GUESS=7          # maximum guesses permitted.
-declare -r DIC_COST=3          # 查询释义,需减去的机会数
+declare -r DIC_COST=3          # the cost to query a word
 declare -r VOCAB_PATH="./vocab.txt" # default vocabulary file path
-declare -r non_char='*'                # 打印出来,表示未猜测出来的字母
+declare -r non_char='*'                # pint as a char which has not unrecognized.
 function hm_dict { dict "$1" ;}         # 
 
-declare special_chars=('-' ' ' "'") # 除字母外的其他单词组成符
+declare special_chars=('-' ' ' "'") # word-constitute except for alpha.
 declare vocab=${1:-$VOCAB_PATH}  
 declare -a words
 declare select_word             # the word which you are guessing
@@ -82,7 +82,7 @@ match ()                        # 检测单个字母是否猜中
     [[ $tmp != $matches ]];return $?    # if some changes happened,return True,otherwise,False
 }
 
-go_on_prompt ()                 # 单轮结束后的交互
+go_on_prompt ()                 # go to next turn
 {
     flush () { while read -e -t1 ;do :; done;}       # flush input
     dic_err="查找释义失败"
@@ -112,7 +112,6 @@ play ()
     matches="$(printf ${non_char}%.0s $(seq ${#select_word}) )" # 用non_char 装填
     trash=( )                   # 猜错的字母
     show-dic (){
-        echo $select_word
        hm_dict "$select_word" 2> /dev/null | # a bug here
            sed -r "{s/$select_word/###/Ig;s/${select_word%?}/###/Ig }" -
         } # 屏蔽该单词,与它的变形
@@ -123,11 +122,11 @@ play ()
         return 0
     }
 
-    for guess in "${special_chars[@]}";do match;done # 如果有特殊符,则显示出来
+    for guess in "${special_chars[@]}";do match;done # show special chars
 
     while say_guess && read -N1 guess
     do
-        while [[ -z $guess ]];do read -N1 guess; done # guess 不能为空
+        while [[ -z $guess ]];do read -N1 guess; done # guess can't be blank
 
         guess=${guess,,}                               # modify to lower case
         case $guess in
