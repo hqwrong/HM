@@ -1,0 +1,280 @@
+#! /bin/bash
+## hm -- A HangMan Game implemented by Bash Script.
+# Time-stamp: <2012-02-03 13:54:27 hqwrong>
+# # Copyright (C) 2011,2012 by 王泓钦(hqwrong) <hq.wrong@gmail.com>
+# Author: 王泓钦(hqwrong) <hq.wrong@gmail.com>
+# Version: 0.1
+
+## Comment:
+#    To play with this game. You should have a vocabulary file which is just
+#  a plain text file with each line a word.
+#    `hm' will pick randomly a word from this file to play with. You can query
+#  the word definition using external dictionary program -- the default is to
+#  use program 'dict'--you can set yours by editing function 'hm_dict', but try to
+#  make the query answer to be output to stdout using plain text.
+#     Type `hm -h' to get help message.
+#     Enjoy!
+
+## License: WTFPL
+#    
+#    Everyone is permitted to copy and distribute verbatim or modified
+#    copies of this license document, and changing it is allowed as long
+#    as the name is changed.
+#    
+#                DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#       TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#    
+#    0. You just DO WHAT THE FUCK YOU WANT TO.
+#    
+#         
+
+## Code:
+
+
+declare -r MAX_GUESS=7          # maximum guesses permitted.
+declare -r DIC_COST=3          # 查询释义,需减去的机会数
+declare -r VOCAB_PATH="./vocab.txt" # default vocabulary file path
+declare -r non_char='*'                # 打印出来,表示未猜测出来的字母
+function hm_dict { dict "$1" ;}         # 
+
+declare special_chars=('-' ' ' "'") # 除字母外的其他单词组成符
+declare vocab=${1:-$VOCAB_PATH}  
+declare -a words
+declare select_word             # the word which you are guessing
+declare Num                     # the number of words read from vocab.
+extract () {
+    # delete blank lines,and trailing/ending blanks of each word.
+    readarray -O 1 words <<< "$(sed -r '{/^\s*$/d; s/^\s+//; s/\s+$//}' $vocab)" 
+    Num=${#words[@]}
+}
+
+
+random-in-place ()                  # produce a random permutation of $words 
+{
+    local ran; local tmpw; local tmpb
+    random ()                   # 获得一个在$1与$2间(包括边界)的随机数
+    {
+        modulus=$(($2-$1+1))
+        ran=$(($1+$RANDOM%$modulus))
+    }
+
+    for i in $(seq $Num)
+    do
+        random $i $Num          # get a random var between $i and $Num
+        # swap 
+        tmpw=${words[$i]}
+        words[$i]=${words[$ran]}
+        words[$ran]=$tmpw
+    done
+}
+
+match ()                        # 检测单个字母是否猜中
+{
+    local index
+    local tmp=$matches
+    output_index () { echo $select_word| fold -w 1 | sed -rn "/[$guess]/=";}
+
+    # 如果猜中,则更新matches
+    while read index && [[ -n $index ]];do
+        matches=$(sed -r "s/./$guess/$index" <<< $matches) # copy the match to corresponding index of $matches
+    done <<< "$(output_index)" # output the index(es) of match
+
+    [[ $tmp != $matches ]];return $?    # if some changes happened,return True,otherwise,False
+}
+
+go_on_prompt ()                 # 单轮结束后的交互
+{
+    flush () { while read -e -t1 ;do :; done;}       # flush input
+    dic_err="查找释义失败"
+
+    flush
+    echo '继续?(是:default 否:n 查询:? )'
+
+    local c;read c
+    case $c in
+        '?' )
+            if ! hm_dict "$select_word"; then
+                echo dic_err
+            fi
+            go_on_prompt
+            ;;
+        'n')
+            flush; return 1 ;;
+        *)
+            flush;return 0 ;;
+    esac
+}
+
+play ()
+{
+
+    trash_num=0
+    matches="$(printf ${non_char}%.0s $(seq ${#select_word}) )" # 用non_char 装填
+    trash=( )                   # 猜错的字母
+    show-dic (){
+        echo $select_word
+       hm_dict "$select_word" 2> /dev/null | # a bug here
+           sed -r "{s/$select_word/###/Ig;s/${select_word%?}/###/Ig }" -
+        } # 屏蔽该单词,与它的变形
+    guesses=                                          # initial $guesses
+    say_guess () {
+        echo "你目前的猜测: ${matches[@]}  错误猜测: ${trash[@]}  你还有$(($MAX_GUESS-$trash_num))次机会"
+        echo -n "猜猜我是谁? "
+        return 0
+    }
+
+    for guess in "${special_chars[@]}";do match;done # 如果有特殊符,则显示出来
+
+    while say_guess && read -N1 guess
+    do
+        while [[ -z $guess ]];do read -N1 guess; done # guess 不能为空
+
+        guess=${guess,,}                               # modify to lower case
+        case $guess in
+            [[:alpha:]] )
+                if [[ $guess = [$guesses] ]];then
+                    echo 重复猜测;continue
+                else
+                    guesses=$guess"$guesses" # add this guess to guesses
+                fi
+
+                if match;then
+                    if [[ $matches = $select_word ]];then
+                        echo "你成功了,你猜测的单词是$select_word"
+                        go_on_prompt
+                        return $?
+                    fi
+                else
+                    (( trash_num++ ))
+                    trash[$trash_num]=$guess
+                    if [[ $trash_num > $MAX_GUESS ]]; then
+                        echo "你已用尽所有机会. 您猜测的单词是 $select_word"
+                        go_on_prompt
+                        return $?
+                    fi
+                fi ;;
+            '?') show-dic;(( trash_num=trash_num + DIC_COST ));;
+            ':') echo {a..z} | sed "s/[${guesses:- }]//g";; # 打印为猜测的字母
+            '^')
+                echo "您猜测的单词是 $select_word"
+                return 0;;
+            *) echo "无意义字符" ;;
+        esac
+    done
+}
+
+
+
+rounds=1                        # 游戏进行的圈数
+hangman ()
+{
+    say_goodbye () { echo "何日君再来?"; exit 0;}
+
+    if [[ $rounds -gt $Num ]]
+    then
+        echo -n "词库已经用完,yesterday once more?(是:y;否:n)"
+        read ans
+        if [[ $ans = y ]]
+        then
+            exec $0
+        else
+            say_goodbye
+        fi
+    fi
+    
+    select_word=${words[$rounds]}
+
+    if play
+    then
+        (( rounds++))
+        hangman
+    else
+        say_goodbye
+    fi
+}
+
+get_vocab () {
+
+    if ! [[ -f $vocab ]];then
+        echo "No $vocab exists";exit 1
+    fi
+}
+
+add_words () {
+   
+    extract
+    for i in "$@"
+    do
+        local flag=uniq
+        for j in "${words[@]}";do
+            if [[ "$i" = "$j" ]];then
+                echo "- $i"
+                flag=repeat
+                break
+            fi
+            
+        done
+
+        if [[ $flag = uniq ]];then
+            echo -e "\n$i" >> $vocab
+            echo "+ $i"
+        fi
+    done
+    echo done
+    exit 0
+}
+
+help() {
+    cat <<EOF
+
+*USAGE*
+
+Play Game:
+	$0 [vocab]
+Get Help:
+	$0 [--help|help]
+Add Words to vocabulary:
+	$0 [vocab] (-a | --add) WORD...
+Note: vocab is for vocabulary file path. the default is ./vocab.txt
+
+*PLAY RULES*
+  You have $MAX_GUESS chances to guess a word. You can query its definition
+(the word in the output will be replaced by ### literally),and it will cost you
+$DIC_COST chances.
+  While guessing, you can type multple guesses at once,for example,you guess this
+word consists 'e','a' and 'c', it's ok to type in "eac RET" at once.
+
+while playing, some character you input has special meaning:
+?    query dictionary the meaning of the word you are guessing;
+:    print the candidate character for guess;
+^    quit guessing this word.
+
+EOF
+}
+
+
+# ==============================Main==========
+########################################
+
+case $1 in
+    '--help'|'-h')              # show help message
+        help
+        ;;
+    '-a'|'--add')
+        get_vocab
+        add_words "${@:2}"
+        ;;
+    *)
+        if [[ "$2" =~ '-a|--add' ]];then 
+            get_vocab "$1"
+            add_words "${@:3}"
+        else                    # play game
+            get_vocab "$1"
+            extract
+            random-in-place
+            hangman
+        fi ;;
+esac
+
+
+## hm ends here.
