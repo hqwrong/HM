@@ -1,4 +1,4 @@
-#! /bin/bash     
+#! /bin/bash
 ## hm -- A HangMan Game implemented by Bash Script.
 # Time-stamp: <2012-02-03 13:54:27 hqwrong>
 # # Copyright (C) 2011,2012 by 王泓钦(hqwrong) <hq.wrong@gmail.com>
@@ -14,19 +14,6 @@
 #  make the query answer to be output to stdout using plain text.
 #     Type `hm -h' to get help message.
 #     Enjoy!
-
-## License: WTFPL
-#    
-#    Everyone is permitted to copy and distribute verbatim or modified
-#    copies of this license document, and changing it is allowed as long
-#    as the name is changed.
-#    
-#                DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#       TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#    
-#    0. You just DO WHAT THE FUCK YOU WANT TO.
-#    
-#         
 
 ## Code:
 
@@ -44,7 +31,7 @@ declare select_word             # the word which you are guessing
 declare Num                     # the number of words read from vocab.
 extract () {
     # delete blank lines,and trailing/ending blanks of each word.
-    readarray -O 1 words <<< "$(sed -r '{/^\s*$/d; s/^\s+//; s/\s+$//}' $vocab)" 
+    readarray -t -O 1 words <<< "$(sed -r '{/^\s*$/d; s/^\s+//; s/\s+$//}' $vocab)" 
     Num=${#words[@]}
 }
 
@@ -107,13 +94,13 @@ go_on_prompt ()                 # go to next turn
 
 play ()
 {
-
     trash_num=0
     matches="$(printf ${non_char}%.0s $(seq ${#select_word}) )" # 用non_char 装填
     trash=( )                   # 猜错的字母
     show-dic (){
-       hm_dict "$select_word" 2> /dev/null | # a bug here
-           sed -r "{s/$select_word/###/Ig;s/${select_word%?}/###/Ig }" -
+        tmp="{s/$select_word/###/Ig;s/${select_word%?}/###/Ig }"
+       hm_dict "$select_word" 2> /dev/null |
+           sed -r "$tmp"
         } # 屏蔽该单词,与它的变形
     guesses=                                          # initial $guesses
     say_guess () {
