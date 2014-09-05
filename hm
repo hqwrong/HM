@@ -255,6 +255,7 @@ case $1 in
             get_vocab "$1"
             add_words "${@:3}"
         else                    # play game
+            help
             get_vocab "$1"
             extract
             random-in-place
