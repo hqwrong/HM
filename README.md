@@ -1,10 +1,12 @@
+# HM
+
 This is A HangMan Game implemented by Bash Script.
 
 make hm executable and just run it.
 
 You'll need a vocab file, which can be set in hm Script.
 
-# Description
+## Description
 
 To play with this game. You should have a vocabulary file which is just
 a plain text file with each line a word.
@@ -16,10 +18,11 @@ make the query answer to be output to stdout using plain text.
 
 Type `hm -h' to get help message.
 
-Note: Only work on GNU/Linux system.
+## Note 
 
+Only work on GNU/Linux system.
 
-# USAGE
+## USAGE
 
 Play Game:
 	./hm [vocab]
@@ -29,7 +32,7 @@ Add Words to vocabulary:
 	./hm [vocab] (-a | --add) WORD...
 Note: vocab is for vocabulary file path. the default is ./vocab.txt
 
-# PLAY RULES
+## PLAY RULES
 
   You have $MAX_GUESS chances to guess a word. You can query its definition
 (the word in the output will be replaced by ### literally),and it will cost you
