@@ -1,9 +1,5 @@
 #! /bin/bash
 ## hm -- A HangMan Game implemented by Bash Script.
-# Time-stamp: <2012-02-03 13:54:27 hqwrong>
-# # Copyright (C) 2011,2012 by 王泓钦(hqwrong) <hq.wrong@gmail.com>
-# Author: 王泓钦(hqwrong) <hq.wrong@gmail.com>
-# Version: 0.1
 
 ## Comment:
 #    To play with this game. You should have a vocabulary file which is just

@@ -16,16 +16,17 @@ make the query answer to be output to stdout using plain text.
 
 Type `hm -h' to get help message.
 
+Note: Only work on GNU/Linux system.
 
 
 # USAGE
 
 Play Game:
-	$0 [vocab]
+	./hm [vocab]
 Get Help:
-	$0 [--help|help]
+	./hm [--help|help]
 Add Words to vocabulary:
-	$0 [vocab] (-a | --add) WORD...
+	./hm [vocab] (-a | --add) WORD...
 Note: vocab is for vocabulary file path. the default is ./vocab.txt
 
 # PLAY RULES
